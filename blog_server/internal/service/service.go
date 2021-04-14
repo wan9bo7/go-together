@@ -16,12 +16,16 @@ var assets assetsPkg.Assets
 func New(addr string) {
 	fmt.Println("addr:", addr)
 	assets = assetsPkg.GetInstance()
+	// 监听指定 TCP 端口，用于接受客户端请求
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
+	// 创建 gRPC Server 的实例对象
 	s := grpc.NewServer()
+	// gRPC Server 内部服务和路由的注册
 	pb.RegisterBlogServerServer(s, new(blogServer))
+	// Serve() 调用服务器以执行阻塞等待，直到进程被终止或被 Stop() 调用
 	if err = s.Serve(lis); err != nil {
 		panic(err)
 	}

@@ -1,33 +1,37 @@
+// 第一行（非空的非注释行）声明使用 proto3 语法
+// 如果不声明，将默认使用 proto2 语法
 syntax = "proto3";
 
 package pb;
 
-
 service BlogServer {
-    rpc SayHello (HelloRequest) returns (HelloReply){}
-    rpc GetList (GetListRequest) returns (GetListReply){}
+  rpc SayHello (HelloRequest) returns (HelloReply){}
+  rpc GetList (GetListRequest) returns (GetListReply){}
 }
+
+// 字段包含三个属性：类型、字段名称、字段编号
+// Protobuf 编译器会根据选择的语言不同，生成相应语言的 Service Interface Code 和 Stubs
 
 message HelloRequest{
-     string name = 1;
+  string name = 1;
 }
 message HelloReply{
- string message =1;
+  string message = 1;
 }
 
 message GetListRequest{
-      string url=1;
+  string url = 1;
 }
 message GetListReply{
-    message Data {
-      string img=1;
-      string title =2;
-      string description=3;
-      string createAt=4;
-      repeated string tags=5;
-      string category=6;
-      string link=7;
-    }
-    repeated Data data =1;
-    string next=2;
+  message Data {
+    string img = 1;
+    string title = 2;
+    string description = 3;
+    string createAt = 4;
+    repeated string tags = 5;
+    string category = 6;
+    string link = 7;
+  }
+  repeated Data data = 1;
+  string next = 2;
 }
