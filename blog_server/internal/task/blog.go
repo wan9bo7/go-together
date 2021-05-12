@@ -1,7 +1,10 @@
 package task
 
 import (
+	"context"
 	"github.com/gocolly/colly/v2"
+	"log"
+	"together/blog_server/internal/dao"
 	"together/blog_server/pkg/assets"
 	"together/global"
 	pb "together/proto"
@@ -9,13 +12,17 @@ import (
 
 type BlogJob struct {
 	Domains []string
+	Context context.Context
 }
 
-func (b *BlogJob) SetDomain(domains []string) {
-	b.Domains = domains
+func New(domains []string, context context.Context) BlogJob {
+	return BlogJob{
+		Domains: domains,
+		Context: context,
+	}
 }
 
-func (b *BlogJob) Run() {
+func (b BlogJob) Run() {
 	for _, domain := range b.Domains {
 		var menus []*pb.GetListReply_Data
 		switch domain {
@@ -24,8 +31,13 @@ func (b *BlogJob) Run() {
 		case global.BlogServer.WangboDomain:
 			menus = getWangbo(domain)
 		}
-		if menus != nil {
-
+		id, err := dao.SelectBlogIdByUrl(domain, b.Context)
+		if err != nil {
+			log.Fatalf("err: %s", err)
+		}
+		err = dao.UpdateBlog(id, domain, menus, b.Context)
+		if err != nil {
+			log.Fatalf("err: %s", err)
 		}
 	}
 }

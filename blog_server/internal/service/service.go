@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/robfig/cron/v3"
 	"net"
+	"time"
+	"together/blog_server/internal/task"
 	assetsPkg "together/blog_server/pkg/assets"
+	"together/global"
 	pb "together/proto"
 
 	"google.golang.org/grpc"
@@ -22,9 +26,21 @@ func New(addr string) {
 	}
 	s := grpc.NewServer()
 	pb.RegisterBlogServerServer(s, new(blogServer))
+
+	// 开启定时任务
+	job := task.New([]string{global.BlogServer.IxugoDomain, global.BlogServer.WangboDomain}, context.Background())
+	go cronJob(job)
 	if err = s.Serve(lis); err != nil {
 		panic(err)
 	}
+}
+
+func cronJob(job task.BlogJob) {
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	c := cron.New(cron.WithLocation(location))
+	c.AddJob("@daily", cron.NewChain(cron.Recover(cron.DefaultLogger)).Then(job))
+	c.Start()
+	select {}
 }
 
 // 监听数据

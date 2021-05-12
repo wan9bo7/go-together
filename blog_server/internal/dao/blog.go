@@ -69,5 +69,58 @@ func InsertBlog(url string, menus []*pb.GetListReply_Data, context context.Conte
 	if err != nil || res.IsError() {
 		return err
 	}
+
+	return nil
+}
+
+func SelectBlogIdByUrl(url string, context context.Context) (id string, err error) {
+	blogSearchBody := make(utils.BodyMap)
+	blogSearchBody.SetBodyMap("query", func(bm utils.BodyMap) {
+		bm.SetBodyMap("match", func(bm utils.BodyMap) {
+			bm.Set("url.keyword", url)
+		})
+	})
+
+	res, err := EsClient.Search(
+		EsClient.Search.WithContext(context),
+		EsClient.Search.WithIndex("blog"),
+		EsClient.Search.WithBody(blogSearchBody.BufferBody()),
+		EsClient.Search.WithTrackTotalHits(true),
+		EsClient.Search.WithPretty(),
+	)
+
+	if err != nil || res.IsError() {
+		return "", err
+	}
+	dataResp := make(map[string]interface{})
+	if err := json.NewDecoder(res.Body).Decode(&dataResp); err != nil {
+		return "", err
+	}
+	total := dataResp["hits"].(map[string]interface{})["total"].(map[string]interface{})["value"].(float64)
+	if total == 1 {
+		blogId := dataResp["hits"].(map[string]interface{})["hits"].([]interface{})[0].(map[string]interface{})["_id"].(string)
+		return blogId, nil
+	}
+	return "", errors.New("查询不到或者总数：!=1")
+}
+
+func UpdateBlog(id string, url string, menus []*pb.GetListReply_Data, context context.Context) error {
+	esBlogReq := &model.EsBlogReq{
+		Url:   url,
+		Menus: menus,
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(esBlogReq)
+	if err != nil {
+		return err
+	}
+	res, err := EsClient.Update(
+		"blog",
+		id,
+		&buf,
+		EsClient.Update.WithContext(context))
+	if err != nil || res.IsError() {
+		return err
+	}
 	return nil
 }
